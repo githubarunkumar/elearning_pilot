@@ -1,6 +1,10 @@
 // Thin wrapper around the backend API. Base URL is configurable via VITE_API_URL
 // (see .env.example) so the same build can point at different deployments.
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// When VITE_API_URL is unset, BASE is '' (a relative path) - correct when the
+// Express server also serves this built frontend (single-service deployment,
+// see server/index.js). Local development with two separate dev servers sets
+// VITE_API_URL explicitly via client/.env (copied from .env.example).
+const BASE = import.meta.env.VITE_API_URL || '';
 
 async function request(path, options = {}) {
   // IMPORTANT: spread `rest` first, then set `headers` last. Object spread
