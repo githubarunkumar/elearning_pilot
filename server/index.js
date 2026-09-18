@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
+const path = require('path');
+const fs = require('fs');
 const { db, hashPassword } = require('./db');
 const { getPublicQuestions, buildShuffledSet, scoreAnswers, QUESTIONS } = require('./quizData');
 
@@ -366,6 +368,24 @@ app.get('/api/admin/contacts-raw', requireAdmin, (req, res) => {
   res.json(grouped);
 });
 
+// ---------------------------------------------------------------------------
+// Serve the built React app (client/dist) from this same process, when
+// present, so the whole pilot can run as a single deployable service (one
+// free-tier web service instead of a separate static host + API host). Local
+// development is unaffected: when client/dist doesn't exist (e.g. you're
+// running `npm run dev` in client/ on its own port), this block is skipped
+// entirely and nothing below runs.
+// ---------------------------------------------------------------------------
+const clientDist = path.join(__dirname, '..', 'client', 'dist');
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+}
+
 app.listen(PORT, () => {
   console.log(`ACG e-learning API listening on http://localhost:${PORT}`);
+  if (fs.existsSync(clientDist)) console.log(`Also serving the built frontend from ${clientDist}`);
 });
